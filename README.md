@@ -140,6 +140,23 @@ api_url = "https://easywheels.io"
 
 You can also set `EASYWHEELS_API_KEY` as an environment variable.
 
+## Pricing
+
+The CLI is free and open source. The registry requires a subscription.
+
+**Why?** Building and hosting GPU wheels is expensive. Each wheel takes 20-30 minutes of GPU compute time to build, and the matrix is massive: 13 packages × 5 CUDA versions × 4 Python versions × 2 platforms × multiple torch versions. We maintain 2,300+ wheels, rebuild them when new GPU architectures launch, and keep them in sync with upstream releases.
+
+That infrastructure costs real money (GPU compute, storage, bandwidth, CDN), and someone has to do the work of patching packages for Windows, testing compatibility, and keeping everything up to date. A subscription keeps the registry running and growing.
+
+| Plan | Price | What you get |
+|------|-------|-------------|
+| **Trial** | Free | 14 days, 5 downloads, 1 custom build |
+| **Lite** | $9/mo | Unlimited downloads for personal use |
+| **Pro** | $19/mo | Unlimited downloads, priority custom builds |
+| **Team** | $49/mo | Team access, shared API keys, usage dashboard |
+
+[Sign up at easywheels.io](https://easywheels.io/signup)
+
 ## Requirements
 
 - Python 3.9+
