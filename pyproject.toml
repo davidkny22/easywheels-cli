@@ -36,9 +36,9 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://easywheels.io"
-Repository = "https://github.com/davidkny20/easywheels-cli"
+Repository = "https://github.com/davidkny22/easywheels-cli"
 Documentation = "https://easywheels.io/packages"
-Issues = "https://github.com/davidkny20/easywheels-cli/issues"
+Issues = "https://github.com/davidkny22/easywheels-cli/issues"
 
 [project.scripts]
 easywheels = "easywheels_cli.main:app"
