@@ -150,10 +150,10 @@ That infrastructure costs real money (GPU compute, storage, bandwidth, CDN), and
 
 | Plan | Price | What you get |
 |------|-------|-------------|
-| **Trial** | Free | 14 days, 5 downloads, 1 custom build |
-| **Lite** | $9/mo | Unlimited downloads for personal use |
-| **Pro** | $19/mo | Unlimited downloads, priority custom builds |
-| **Team** | $49/mo | Team access, shared API keys, usage dashboard |
+| **Trial** | Free | 14 days, 3 downloads, 1 custom build |
+| **Lite** | $9/mo | 10 downloads/mo, registry access |
+| **Pro** | $19/mo | Unlimited downloads, 3 custom builds/mo |
+| **Team** | $49/mo | Unlimited downloads, 10 custom builds/mo, 5 team seats |
 
 [Sign up at easywheels.io](https://easywheels.io/signup)
 
