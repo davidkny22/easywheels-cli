@@ -93,10 +93,11 @@ def cmd_install(packages: list[str], pip_args: list[str]) -> None:
             console.print(f"  CUDA: {wheel.cuda_version}, Torch: {wheel.torch_version or 'any'}")
             console.print()
 
-            # Install via pip with the direct URL
+            # Install via pip — embed auth in URL for the simple index download
+            auth_url = wheel.download_url.replace("https://", f"https://{api_key}:@")
             cmd = [
                 sys.executable, "-m", "pip", "install",
-                wheel.download_url,
+                auth_url,
                 "--no-deps",
                 *pip_args,
             ]
