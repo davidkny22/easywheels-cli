@@ -23,24 +23,29 @@ def load_config() -> dict:
         return tomllib.load(f)
 
 
+def _toml_encode_value(value: object) -> str:
+    """Encode a single value as a TOML literal."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, str):
+        escaped = value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+        return f'"{escaped}"'
+    return repr(value)
+
+
 def save_config(data: dict) -> None:
     """Save config to ~/.easywheels/config.toml."""
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-    lines = []
-    for key, value in data.items():
-        if isinstance(value, str):
-            lines.append(f'{key} = "{value}"')
-        elif isinstance(value, bool):
-            lines.append(f"{key} = {'true' if value else 'false'}")
-        else:
-            lines.append(f"{key} = {value}")
+    lines = [f"{key} = {_toml_encode_value(value)}" for key, value in data.items()]
     CONFIG_FILE.write_text("\n".join(lines) + "\n")
 
 
 def get_api_key() -> str | None:
-    """Get stored API key."""
-    cfg = load_config()
-    return cfg.get("api_key")
+    """Get API key from env var or config file."""
+    import os
+    return os.environ.get("EASYWHEELS_API_KEY") or load_config().get("api_key")
 
 
 def get_api_url() -> str:

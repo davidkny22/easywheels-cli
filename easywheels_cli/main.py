@@ -8,6 +8,8 @@ Usage:
 """
 from __future__ import annotations
 
+import logging
+import os
 import subprocess
 import sys
 
@@ -19,6 +21,7 @@ from easywheels_cli.config import get_api_key, get_api_url
 from easywheels_cli.detect import Environment, detect
 
 console = Console()
+logger = logging.getLogger("easywheels")
 
 
 def _print_env(env: Environment) -> None:
@@ -59,7 +62,7 @@ def cmd_login() -> None:
     device_login()
 
 
-def cmd_install(packages: list[str], pip_args: list[str]) -> None:
+def cmd_install(packages: list[str], pip_args: list[str], *, dry_run: bool = False) -> None:
     """Install packages with auto-detected environment."""
     api_key = get_api_key()
     if not api_key:
@@ -68,6 +71,7 @@ def cmd_install(packages: list[str], pip_args: list[str]) -> None:
         return
 
     env = detect()
+    logger.debug("Detected env: python=%s cuda=%s gpu=%s platform=%s", env.python_version, env.cuda_version, env.gpu_name, env.platform)
     console.print()
     _print_env(env)
     console.print()
@@ -78,13 +82,13 @@ def cmd_install(packages: list[str], pip_args: list[str]) -> None:
     from easywheels_cli.resolve import resolve
 
     for package in packages:
-        # Parse package==version if specified
         pkg_name = package
         pkg_version = None
         if "==" in package:
             pkg_name, pkg_version = package.split("==", 1)
 
         console.print(f"[bold]Resolving {pkg_name}...[/bold]")
+        logger.debug("Resolving package=%s version=%s", pkg_name, pkg_version)
 
         wheel = resolve(pkg_name, env, version=pkg_version)
 
@@ -93,35 +97,53 @@ def cmd_install(packages: list[str], pip_args: list[str]) -> None:
             console.print(f"  CUDA: {wheel.cuda_version}, Torch: {wheel.torch_version or 'any'}")
             console.print()
 
-            # Install via pip — embed auth in URL for the simple index download
             auth_url = wheel.download_url.replace("https://", f"https://{api_key}:@")
+            pip_env = {**os.environ, "PIP_NO_INPUT": "1"}
             cmd = [
                 sys.executable, "-m", "pip", "install",
                 auth_url,
                 "--no-deps",
-                *pip_args,
+                *[a for a in pip_args if a != "--no-deps"],
             ]
+
+            if dry_run:
+                console.print(f"[cyan][DRY RUN][/cyan] Would run: pip install {wheel.wheel_filename}")
+                logger.debug("Dry run — skipping: %s", " ".join(cmd))
+                continue
+
             console.print(f"[dim]Running: pip install {wheel.wheel_filename}[/dim]\n")
-            result = subprocess.run(cmd)
+            logger.debug("Running: %s", " ".join(cmd))
+            result = subprocess.run(cmd, env=pip_env)
             if result.returncode != 0:
                 console.print(f"[red]Failed to install {pkg_name}[/red]")
+                console.print(f"[dim]Try: pip install {pkg_name} manually, or run easywheels search {pkg_name} to see available wheels.[/dim]")
         else:
-            # Fallback: use the index URL with pip
             console.print(f"  [dim]No exact match from API, falling back to index...[/dim]")
             api_url = get_api_url()
-            index_url = f"{api_url.replace('https://', f'https://{api_key}:@')}/simple/"
-
+            auth_index = api_url.replace("https://", f"https://{api_key}:@") + "/simple/"
+            pip_env = {
+                **os.environ,
+                "PIP_EXTRA_INDEX_URL": auth_index,
+                "PIP_NO_INPUT": "1",
+            }
             cmd = [
                 sys.executable, "-m", "pip", "install",
                 package,
-                "--extra-index-url", index_url,
                 "--prefer-binary",
                 *pip_args,
             ]
-            console.print(f"[dim]Running: pip install {package} --extra-index-url easywheels.io/simple/[/dim]\n")
-            result = subprocess.run(cmd)
+
+            if dry_run:
+                console.print(f"[cyan][DRY RUN][/cyan] Would run: pip install {package} via EasyWheels index")
+                logger.debug("Dry run — skipping: %s", " ".join(cmd))
+                continue
+
+            console.print(f"[dim]Running: pip install {package} via EasyWheels index[/dim]\n")
+            logger.debug("Running: %s", " ".join(cmd))
+            result = subprocess.run(cmd, env=pip_env)
             if result.returncode != 0:
                 console.print(f"[red]Failed to install {pkg_name}[/red]")
+                console.print(f"[dim]This package may not be in our registry. Check: easywheels search {pkg_name}[/dim]")
 
 
 def cmd_search(package: str) -> None:
@@ -186,6 +208,7 @@ def app() -> None:
         description="Smart GPU wheel installer — auto-detects CUDA, GPU, torch, and Python.",
     )
     parser.add_argument("--version", action="version", version=f"easywheels {__version__}")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Show debug output")
 
     sub = parser.add_subparsers(dest="command")
 
@@ -195,6 +218,7 @@ def app() -> None:
     install_p.add_argument("--no-deps", action="store_true", help="Don't install dependencies")
     install_p.add_argument("--force-reinstall", action="store_true")
     install_p.add_argument("--upgrade", "-U", action="store_true")
+    install_p.add_argument("--dry-run", action="store_true", help="Show what would be installed without installing")
 
     # detect
     sub.add_parser("detect", aliases=["env"], help="Show detected environment")
@@ -214,6 +238,9 @@ def app() -> None:
 
     args = parser.parse_args()
 
+    if args.verbose:
+        logging.basicConfig(level=logging.DEBUG, format="%(name)s: %(message)s")
+
     if args.command in ("detect", "env"):
         cmd_detect()
     elif args.command == "login":
@@ -226,7 +253,7 @@ def app() -> None:
             pip_args.append("--force-reinstall")
         if getattr(args, "upgrade", False):
             pip_args.append("--upgrade")
-        cmd_install(args.packages, pip_args)
+        cmd_install(args.packages, pip_args, dry_run=getattr(args, "dry_run", False))
     elif args.command in ("search", "s"):
         cmd_search(args.package)
     elif args.command == "config":

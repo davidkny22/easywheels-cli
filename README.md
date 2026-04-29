@@ -2,7 +2,7 @@
 
 > Install GPU Python packages without the headache.
 
-`easywheels` auto-detects your CUDA version, GPU architecture, PyTorch version, and Python version, then installs the exact right pre-built wheel. No more hunting through compatibility matrices or building from source for 2 hours.
+`easywheels` auto-detects your CUDA version, GPU architecture, PyTorch version, and Python version, then installs the exact right pre-built wheel. No more hunting through compatibility matrices or building from source.
 
 ## Install
 
@@ -16,58 +16,51 @@ pip install easywheels
 # Log in with your GitHub account
 easywheels login
 
-# Install any GPU package. That's it.
+# Install any GPU package
 easywheels install flash-attn
 ```
 
 `easywheels` detects your environment automatically:
 
 ```
-               Detected Environment
-+-------------------------------------------------+
-| Python     | cp312                              |
-| Platform   | linux (x86_64)                     |
-| CUDA       | cu128                              |
-| GPU        | NVIDIA RTX 4090                    |
-| GPU SM     | sm_89                              |
-| PyTorch    | 2.9                                |
-| Torch CUDA | 12.8                               |
-+-------------------------------------------------+
+Detected: Python 3.12, CUDA 12.8, RTX 4090 (sm_89), torch 2.9.0
 
 Resolving flash-attn...
   Found: flash_attn-2.8.3+cu128torch2.9-cp312-cp312-linux_x86_64.whl
   CUDA: cu128, Torch: 2.9
 
 Running: pip install flash_attn-2.8.3+cu128torch2.9-cp312-cp312-linux_x86_64.whl
+Done in 9 seconds.
 ```
 
 ## Why?
 
-Installing GPU-accelerated Python packages on CUDA is painful:
+Installing GPU Python packages on CUDA is painful:
 
-- `flash-attn` has **362 wheel variants** for a single version. pip picks randomly.
-- Building from source takes **2+ hours** and requires MSVC, CUDA toolkit, and Ninja.
-- Wheels are scattered across PyPI, GitHub Releases, and HuggingFace.
-- Getting the wrong CUDA or torch version means silent failures or crashes.
+- Some packages ship source-only on PyPI. No pre-built wheels at all.
+- Pre-built wheels that do exist are scattered across GitHub repos, custom indices, and community forks.
+- Many CUDA/Python/platform combos simply don't have a wheel anywhere.
+- Building from source takes 30-120 minutes and frequently fails.
 
-`easywheels` solves this by maintaining a registry of 2,300+ pre-built wheels and a CLI that knows exactly which one you need.
+`easywheels` solves this. It mirrors pre-built wheels from every upstream source and builds the gaps on GPU infrastructure. 2,200+ wheels across 10 packages, served through a single registry.
 
 ## Commands
 
 ### `easywheels install <package>`
 
-Detects your environment and installs the best matching wheel from the EasyWheels registry.
+Detects your environment and installs the best matching wheel.
 
 ```bash
 easywheels install flash-attn
 easywheels install mamba-ssm causal-conv1d
 easywheels install flash-attn==2.8.3    # pin a version
 easywheels install flash-attn -U        # upgrade
+easywheels install flash-attn --dry-run # show what would install
 ```
 
 ### `easywheels detect`
 
-Shows your detected environment without installing anything. Useful for debugging.
+Shows your detected environment without installing anything.
 
 ```bash
 easywheels detect
@@ -75,7 +68,7 @@ easywheels detect
 
 ### `easywheels login`
 
-Authenticates via GitHub using device OAuth. Opens your browser, you enter a short code, done. Your API key is stored in `~/.easywheels/config.toml`.
+Authenticates via GitHub device OAuth. Opens your browser, you authorize, done. Your API key is stored in `~/.easywheels/config.toml`.
 
 ```bash
 easywheels login
@@ -91,39 +84,27 @@ easywheels search flash-attn
 
 ### `easywheels config`
 
-Manage configuration directly.
+Manage configuration.
 
 ```bash
-easywheels config --show              # show current config
-easywheels config --set-key ew_xxx    # set API key manually
-easywheels config --set-url https://custom.url
+easywheels config --show
+easywheels config --set-key ew_xxx
 ```
 
 ## What's in the Registry?
 
-2,300+ pre-built wheels across 13 packages:
+2,200+ pre-built wheels across 10 packages:
 
-| Package | Linux | Windows | CUDA | Python |
-|---------|-------|---------|------|--------|
-| flash-attn | x86_64, aarch64 | x86_64 | cu124-cu131 | 3.10-3.14 |
-| xformers | x86_64 | x86_64 | cu126-cu130 | 3.9+ (ABI3) |
-| mamba-ssm | x86_64, aarch64 | coming soon | cu118-cu130 | 3.10-3.13 |
-| causal-conv1d | x86_64, aarch64 | x86_64 | cu124-cu129 | 3.11-3.13 |
-| deepspeed | x86_64 | x86_64 | cu118-cu130 | 3.9-3.13 |
-| exllamav2 | x86_64 | x86_64 | cu118-cu130 | 3.10-3.13 |
-| llama-cpp-python | x86_64 | x86_64 | cu121-cu130 | 3.9-3.13 |
-| sageattention | x86_64 | x86_64 | cu124-cu130 | 3.9+ (ABI3) |
-| vllm | x86_64 | - | cu130 | 3.8+ (ABI3) |
-| torchao | x86_64 | - | cu124-cu130 | 3.9+ (ABI3) |
-| flash-attn-3 | x86_64 | x86_64 | cu126-cu130 | 3.9+ (ABI3) |
-| gptqmodel | x86_64 | - | cu126-cu130 | 3.10-3.13 |
-| flashinfer | x86_64 | - | cu128-cu129 | 3.9+ (ABI3) |
+- flash-attn, flash-attn-3, deepspeed, mamba-ssm, causal-conv1d, exllamav2, llama-cpp-python, gptqmodel, sageattention, flashinfer-jit-cache
+- CUDA 12.4 through 13.0
+- Python 3.10-3.13
+- Linux fully covered. Windows build-out in progress.
 
-GPU architectures: Turing (sm_75) through Hopper (sm_90) with PTX forward compatibility. Blackwell (sm_120) support rolling out.
+GPU architectures: Turing (sm_75) through Hopper (sm_90) with PTX forward compatibility.
 
 ## How It Works
 
-1. **Detection.** The CLI checks `nvidia-smi`, `nvcc`, and `torch` to determine your CUDA version, GPU compute capability, and PyTorch version.
+1. **Detection.** The CLI checks `nvidia-smi`, `nvcc`, `CUDA_PATH`/`CUDA_HOME`, and `torch` to determine your CUDA version, GPU compute capability, and PyTorch version.
 
 2. **Resolution.** Your environment is sent to the EasyWheels API, which finds the best compatible wheel considering CUDA version, torch ABI, platform, and architecture.
 
@@ -142,18 +123,14 @@ You can also set `EASYWHEELS_API_KEY` as an environment variable.
 
 ## Pricing
 
-The CLI is free and open source. The registry requires a subscription.
+The CLI is free and open source. The registry requires a subscription because building and hosting GPU wheels costs real money.
 
-**Why?** Building and hosting GPU wheels is expensive. Each wheel takes 20-30 minutes of GPU compute time to build, and the matrix is massive: 13 packages × 5 CUDA versions × 4 Python versions × 2 platforms × multiple torch versions. We maintain 2,300+ wheels, rebuild them when new GPU architectures launch, and keep them in sync with upstream releases.
-
-That infrastructure costs real money (GPU compute, storage, bandwidth, CDN), and someone has to do the work of patching packages for Windows, testing compatibility, and keeping everything up to date. A subscription keeps the registry running and growing.
-
-| Plan | Price | What you get |
-|------|-------|-------------|
-| **Trial** | Free | 14 days, 3 downloads, 1 custom build |
-| **Lite** | $9/mo | 10 downloads/mo, registry access |
-| **Pro** | $19/mo | Unlimited downloads, 3 custom builds/mo |
-| **Team** | $49/mo | Unlimited downloads, 10 custom builds/mo, 5 team seats |
+| Plan | Price | Downloads |
+|------|-------|-----------|
+| **Trial** | Free 14 days | 3 downloads |
+| **Lite** | $9/mo | 10/mo |
+| **Pro** | $19/mo | Unlimited |
+| **Team** | $49/mo | Unlimited, 5 seats |
 
 [Sign up at easywheels.io](https://easywheels.io/signup)
 
@@ -168,7 +145,6 @@ That infrastructure costs real money (GPU compute, storage, bandwidth, CDN), and
 
 - **Registry**: [easywheels.io](https://easywheels.io)
 - **Packages**: [easywheels.io/packages](https://easywheels.io/packages)
-- **Wheel Finder**: [easywheels.io/search](https://easywheels.io/search)
 
 ## License
 
