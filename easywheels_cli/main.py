@@ -57,8 +57,8 @@ def cmd_detect() -> None:
 
 
 def cmd_login() -> None:
-    """Authenticate via device OAuth flow."""
-    from easywheels_cli.auth import device_login
+    """Authenticate with EasyWheels."""
+    from easywheels_cli.auth import login as device_login
     device_login()
 
 
