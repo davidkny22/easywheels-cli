@@ -1,5 +1,10 @@
 # easywheels
 
+> **status: shut down.** uv's team started building this into the package
+> manager itself, so i stopped work on it. signups are closed and the registry
+> is being taken down.
+
+
 > Install GPU Python packages without the headache.
 
 `easywheels` auto-detects your CUDA version, GPU architecture, PyTorch version, and Python version, then installs the exact right pre-built wheel. No more hunting through compatibility matrices or building from source.
@@ -120,19 +125,6 @@ api_url = "https://easywheels.io"
 ```
 
 You can also set `EASYWHEELS_API_KEY` as an environment variable.
-
-## Pricing
-
-The CLI is free and open source. The registry requires a subscription because building and hosting GPU wheels costs real money.
-
-| Plan | Price | Downloads |
-|------|-------|-----------|
-| **Trial** | Free 14 days | 3 downloads |
-| **Lite** | $9/mo | 10/mo |
-| **Pro** | $19/mo | Unlimited |
-| **Team** | $49/mo | Unlimited, 5 seats |
-
-[Sign up at easywheels.io](https://easywheels.io/signup)
 
 ## Requirements
 
